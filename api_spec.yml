@@ -1,0 +1,124 @@
+openapi: 3.0.0
+info:
+  title: Weather API
+  description: Retrieve current and daily high/low temperatures based on postal code
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /v1/weather:
+    get:
+      summary: Get weather information by postal code
+      parameters:
+        - in: query
+          name: postal_code
+          description: Postal code for the location
+          required: true
+          schema:
+            type: string
+          example: "211001"
+        - in: query
+          name: country_code
+          description: Two-letter ISO country code
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+          example: "in"
+        - in: header
+          name: transaction_id
+          description: Unique transaction ID for tracking purposes
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          headers:
+            transaction_id:
+              description: Transaction ID for tracking purposes
+              schema:
+                type: string
+                format: uuid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherResponse'
+              examples:
+                current_weather_example:
+                  value:
+                    current:
+                      temperature:
+                        value: 10
+                        unit: "°C"
+                      time: "2024-03-04T12:00:00Z"
+                    daily:
+                      min_temperature:
+                        value: 5
+                        unit: "°C"
+                      max_temperature:
+                        value: 15
+                        unit: "°C"
+                      time: "2024-03-04"
+                    from_cache: false
+        '400':
+          description: Bad request, missing or invalid parameters
+        '404':
+          description: Location not found
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    WeatherResponse:
+      type: object
+      properties:
+        current:
+          $ref: '#/components/schemas/Current'
+        daily:
+          $ref: '#/components/schemas/Daily'
+        from_cache:
+          type: boolean
+          description: true, if response is returned from cache, else false
+      required:
+        - current
+        - daily
+    Current:
+      type: object
+      properties:
+        temperature:
+          $ref: '#/components/schemas/Temperature'
+        time:
+          type: string
+          format: date-time
+          description: Time when current temperature was measured (ISO 8601 format)
+      required:
+        - temperature
+        - time
+    Daily:
+      type: object
+      properties:
+        min_temperature:
+          $ref: '#/components/schemas/Temperature'
+        max_temperature:
+          $ref: '#/components/schemas/Temperature'
+        time:
+          type: string
+          format: date
+          description: Date when daily temperature was measured (ISO 8601 format)
+      required:
+        - min_temperature
+        - max_temperature
+        - time
+    Temperature:
+      type: object
+      properties:
+        value:
+          type: number
+          description: Temperature value
+        unit:
+          type: string
+          description: Unit of temperature value
+      required:
+        - value
+        - unit
